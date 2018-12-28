@@ -79,17 +79,17 @@
 
 
 
-<meta name="description" content="最近使用STM32F030RCT6这款MCU去开发FLASH芯片W25Q80的读写驱动，使用的是官方的HAL库，在调试过 程中发现代码总是莫名其妙的进入HardFault_Handler，最后发现问题出现在官方的SPI库中的HAL_SPI_Transmit这个函数，这个函数里隐藏了一个很大的问题，主要是由于下面这部分引起的 123456789101112131415161718/* Wait un">
+<meta name="description" content="最近使用STM32F030RCT6这款MCU去开发FLASH芯片W25Q80的读写驱动，使用的是官方的HAL库，在调试过程中 发现代码总是莫名其妙的进入HardFault_Handler，最后发现问题出现在官方的SPI库中的HAL_SPI_Transmit这个函数，这 个函数里隐藏了一个很大的问题，主要是由于下面这部分引起的 123456789101112131415161718/* Wait u">
 <meta property="og:type" content="article">
 <meta property="og:title" content="STM32 HAL库SPI的BUG">
 <meta property="og:url" content="http://yoursite.com/2018/12/27/STM32 HAL库SPI的BUG/index.html">
 <meta property="og:site_name" content="屋外秋水">
-<meta property="og:description" content="最近使用STM32F030RCT6这款MCU去开发FLASH芯片W25Q80的读写驱动，使用的是官方的HAL库，在调试过 程中发现代码总是莫名其妙的进入HardFault_Handler，最后发现问题出现在官方的SPI库中的HAL_SPI_Transmit这个函数，这个函数里隐藏了一个很大的问题，主要是由于下面这部分引起的 123456789101112131415161718/* Wait un">
+<meta property="og:description" content="最近使用STM32F030RCT6这款MCU去开发FLASH芯片W25Q80的读写驱动，使用的是官方的HAL库，在调试过程中 发现代码总是莫名其妙的进入HardFault_Handler，最后发现问题出现在官方的SPI库中的HAL_SPI_Transmit这个函数，这 个函数里隐藏了一个很大的问题，主要是由于下面这部分引起的 123456789101112131415161718/* Wait u">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-12-28T05:12:14.929Z">
+<meta property="og:updated_time" content="2018-12-28T05:15:28.640Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="STM32 HAL库SPI的BUG">
-<meta name="twitter:description" content="最近使用STM32F030RCT6这款MCU去开发FLASH芯片W25Q80的读写驱动，使用的是官方的HAL库，在调试过 程中发现代码总是莫名其妙的进入HardFault_Handler，最后发现问题出现在官方的SPI库中的HAL_SPI_Transmit这个函数，这个函数里隐藏了一个很大的问题，主要是由于下面这部分引起的 123456789101112131415161718/* Wait un">
+<meta name="twitter:description" content="最近使用STM32F030RCT6这款MCU去开发FLASH芯片W25Q80的读写驱动，使用的是官方的HAL库，在调试过程中 发现代码总是莫名其妙的进入HardFault_Handler，最后发现问题出现在官方的SPI库中的HAL_SPI_Transmit这个函数，这 个函数里隐藏了一个很大的问题，主要是由于下面这部分引起的 123456789101112131415161718/* Wait u">
 
 
 
@@ -362,11 +362,15 @@
       
 
       
-        <pre><code>最近使用STM32F030RCT6这款MCU去开发FLASH芯片W25Q80的读写驱动，使用的是官方的HAL库，在调试过
-</code></pre><p>程中发现代码总是莫名其妙的进入HardFault_Handler，最后发现问题出现在官方的SPI库中的HAL_SPI_Transmit<br>这个函数，这个函数里隐藏了一个很大的问题，主要是由于下面这部分引起的</p>
+        <pre><code>最近使用STM32F030RCT6这款MCU去开发FLASH芯片W25Q80的读写驱动，使用的是官方的HAL库，在调试过程中
+</code></pre><p>发现代码总是莫名其妙的进入HardFault_Handler，最后发现问题出现在官方的SPI库中的HAL_SPI_Transmit这个函数，这</p>
+<p>个函数里隐藏了一个很大的问题，主要是由于下面这部分引起的</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Wait until TXE flag is set to send data */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE))</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">if</span> (hspi-&gt;TxXferCount &gt; <span class="number">1U</span> == <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">  &#123;</span><br><span class="line">    <span class="comment">/* write on the data register in packing mode */</span></span><br><span class="line">    hspi-&gt;Instance-&gt;DR = *((<span class="keyword">uint16_t</span> *)pData);</span><br><span class="line">    pData += <span class="keyword">sizeof</span>(<span class="keyword">uint16_t</span>);</span><br><span class="line">    hspi-&gt;TxXferCount -= <span class="number">2U</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    *((__IO <span class="keyword">uint8_t</span> *)&amp;hspi-&gt;Instance-&gt;DR) = (*pData++);</span><br><span class="line">    hspi-&gt;TxXferCount--;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<pre><code>当SPI检测到要发送的数据&gt;1Byte时，每次直接传输16位数据，这样可以提升SPI的数传速度，但是这里
-</code></pre><p>就要注意了，这部分代码并没有考虑到指针对齐，如果传输进来的指针pData采用的是1字节对齐，也就是说这部<br>分的数据是连续存储的，并且pData所指向的地址是奇数，这样就有问题了，由于采用了 <em>(uint16_t  \</em>) pData*<br>强制将pData由8位转成16位，这是这个指针是2字节对齐的，这样这个指针的地址不是这个数据的首地址，而是<br>这个数据的高位地址。访问这个地址的数据就很容易出现一些意想不到的问题。因此我做了如下修改</p>
+<pre><code>当SPI检测到要发送的数据&gt;1Byte时，每次直接传输16位数据，这样可以提升SPI的数传速度，但是这里就要注意了，
+</code></pre><p>这部分代码并没有考虑到指针对齐，如果传输进来的指针pData采用的是1字节对齐，也就是说这部分的数据是连续存储</p>
+<p>的，并且pData所指向的地址是奇数，这样就有问题了，由于采用了 <em>(uint16_t  \</em>) pData* 强制将pData由8位转成16位，</p>
+<p>这是这个指针是2字节对齐的，这样这个指针的地址不是这个数据的首地址，而是这个数据的高位地址。访问这个地址的</p>
+<p>数据就很容易出现一些意想不到的问题。因此我做了如下修改</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">/* Wait until TXE flag is set to send data */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE))</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">if</span> (hspi-&gt;TxXferCount &gt; <span class="number">1U</span> &amp;&amp; (((<span class="keyword">uint32_t</span>)pData%<span class="number">2</span>) == <span class="number">0</span>))</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="comment">/* write on the data register in packing mode */</span></span><br><span class="line">    hspi-&gt;Instance-&gt;DR = *((<span class="keyword">uint16_t</span> *)pData);</span><br><span class="line">    pData += <span class="keyword">sizeof</span>(<span class="keyword">uint16_t</span>);</span><br><span class="line">    hspi-&gt;TxXferCount -= <span class="number">2U</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    *((__IO <span class="keyword">uint8_t</span> *)&amp;hspi-&gt;Instance-&gt;DR) = (*pData++);</span><br><span class="line">    hspi-&gt;TxXferCount--;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
       
