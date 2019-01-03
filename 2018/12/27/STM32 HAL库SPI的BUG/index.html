@@ -6,7 +6,7 @@
   <title>STM32 HAL库SPI的BUG | 屋外秋水</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   
-    <meta name="keywords" content="MinHow,MinHow's Blog">
+    <meta name="keywords" content="MarkZhu, 屋外秋水的博客">
   
   <meta name="description" content="最近使用STM32F030RCT6这款MCU去开发FLASH芯片W25Q80的读写驱动，使用的是官方的HAL 库，在调试过程中发现代码总是莫名其妙的进入HardFault_Handler，最后发现问题出现在官方的 SPI库中的HAL_SPI_Transmit这个函数，这个函数里隐藏了一个很大的问题，主要是由于下面这部 分引起的 123456789101112131415161718/* Wait">
 <meta property="og:type" content="article">
@@ -41,7 +41,7 @@
         <div id="header-menu" class="header-menu-pos animated">
             <div class="header-menu-container">
                 <a href="/" class="left">
-                    <span class="site-title">MinHow&#39;s Blog</span>
+                    <span class="site-title">MarkZhu&#39;s Blog</span>
                 </a>
                 <nav id="header-menu-nav" class="right">
                     
@@ -76,14 +76,14 @@
                 <div id="header-title">
                     
                     <h2>
-                        MinHow&#39;s Blog
+                        MarkZhu&#39;s Blog
                     </h2>
                     
                 </div>
                 <div id="header-description">
                     
                     <h3>
-                        一个专注 WEB 开发的技术博客
+                        一个专注 嵌入式 开发的技术博客
                     </h3>
                     
                 </div>
